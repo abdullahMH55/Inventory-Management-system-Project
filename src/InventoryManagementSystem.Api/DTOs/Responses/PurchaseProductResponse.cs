@@ -1,3 +1,3 @@
 namespace InventoryManagementSystem.Api.DTOs.Responses;
 
-public class PaginatedResponse { }
+public class PurchaseProductResponse { }
