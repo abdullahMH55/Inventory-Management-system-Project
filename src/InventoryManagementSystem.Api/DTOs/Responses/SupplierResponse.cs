@@ -1,3 +1,10 @@
 namespace InventoryManagementSystem.Api.DTOs.Responses;
 
-public class SupplierResponse { }
+public class SupplierResponse
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+}
