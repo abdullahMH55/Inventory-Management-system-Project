@@ -8,8 +8,10 @@ public class Product
     public decimal Price { get; set; }
     public int Stock { get; set; }
     public int CategoryId { get; set; }
+    public int UserId { get; set; }
 
     public Category Category { get; set; } = null!;
+    public User User { get; set; } = null!;
     public ICollection<PurchaseProduct> PurchaseProducts { get; set; } = new List<PurchaseProduct>();
     public ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 }

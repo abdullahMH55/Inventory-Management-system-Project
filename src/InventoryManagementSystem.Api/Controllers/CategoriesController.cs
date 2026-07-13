@@ -1,15 +1,51 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using InventoryManagementSystem.Api.DTOs.Requests;
+using InventoryManagementSystem.Api.Services;
 
 namespace InventoryManagementSystem.Api.Controllers;
 
-[Route("[controller]")]
+[Route("api/[controller]")]
 [ApiController]
-public class CategoriesController 
+[Authorize]
+public class CategoriesController : ControllerBase
 {
+    private readonly ICategoryService _categoryService;
+
+    public CategoriesController(ICategoryService categoryService)
+    {
+        _categoryService = categoryService;
+    }
 
     [HttpGet]
-    public string Get()
+    public async Task<IActionResult> GetAll() => Ok(await _categoryService.GetAllAsync());
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
     {
-        return "s";
+        var result = await _categoryService.GetByIdAsync(id);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request)
+    {
+        var result = await _categoryService.CreateAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryRequest request)
+    {
+        if (id != request.Id) return BadRequest("Id mismatch");
+        var result = await _categoryService.UpdateAsync(request);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var result = await _categoryService.DeleteAsync(id);
+        return result ? NoContent() : NotFound();
     }
 }
