@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using InventoryManagementSystem.Api.DTOs.Requests;
 using InventoryManagementSystem.Api.DTOs.Responses;
+using InventoryManagementSystem.Api.Exceptions;
 using InventoryManagementSystem.Api.Models;
 using InventoryManagementSystem.Api.Repositories;
 
@@ -72,7 +74,15 @@ public class CustomerService : ICustomerService
         if (customer == null) return false;
 
         _customerRepository.Delete(customer);
-        await _customerRepository.SaveChangesAsync();
+        try
+        {
+            await _customerRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new ConflictException(
+                "Cannot delete a customer who has sales. Delete their sales first.");
+        }
         return true;
     }
 

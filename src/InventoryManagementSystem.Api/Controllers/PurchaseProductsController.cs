@@ -30,19 +30,10 @@ public class PurchaseProductsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePurchaseProductRequest request)
     {
-        try
-        {
-            var result = await _purchaseProductService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        // Domain errors (product/supplier not found, insufficient stock on a later
+        // adjustment) are typed exceptions mapped to 404/400 by ExceptionMiddleware.
+        var result = await _purchaseProductService.CreateAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]

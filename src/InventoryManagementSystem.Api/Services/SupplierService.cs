@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using InventoryManagementSystem.Api.DTOs.Requests;
 using InventoryManagementSystem.Api.DTOs.Responses;
+using InventoryManagementSystem.Api.Exceptions;
 using InventoryManagementSystem.Api.Models;
 using InventoryManagementSystem.Api.Repositories;
 
@@ -72,7 +74,15 @@ public class SupplierService : ISupplierService
         if (supplier == null) return false;
 
         _supplierRepository.Delete(supplier);
-        await _supplierRepository.SaveChangesAsync();
+        try
+        {
+            await _supplierRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            throw new ConflictException(
+                "Cannot delete a supplier that has purchases. Delete those purchases first.");
+        }
         return true;
     }
 
