@@ -50,6 +50,28 @@ export function formatRelative(value: string | Date): string {
   return formatDistanceToNowStrict(date, { addSuffix: true });
 }
 
+/**
+ * Value for an <input type="datetime-local"> from a Date, in the input's
+ * required 'YYYY-MM-DDTHH:mm' local-time format.
+ */
+export function toDateTimeLocalValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}
+
+/**
+ * The reverse: a datetime-local value ('2026-07-14T10:30') to the offset-less
+ * string the API expects ('2026-07-14T10:30:00'). The API parses this as local
+ * time, which is exactly what parseApiDate assumes on the way back, so the
+ * send and parse sides share one assumption.
+ */
+export function fromDateTimeLocalValue(value: string): string {
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';

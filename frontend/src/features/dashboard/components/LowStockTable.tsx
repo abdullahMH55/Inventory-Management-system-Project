@@ -9,7 +9,7 @@ import {
 } from '@/shared/components/ui/select';
 import { cn } from '@/shared/lib/cn';
 import { formatCurrency, formatNumber } from '@/shared/lib/format';
-import { THRESHOLD_OPTIONS } from '../hooks/useLowStockThreshold';
+import { THRESHOLD_OPTIONS } from '@/shared/hooks/useLowStockThreshold';
 import type { LowStockRow } from '../lib/stats';
 
 function StockCell({ stock }: { stock: number }) {

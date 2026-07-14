@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/app/routes';
 import { Field } from '@/shared/components/Field';
+import { FormError } from '@/shared/components/FormError';
 import { Button } from '@/shared/components/ui/button';
 import { useRegister } from '../hooks/useRegister';
 import { useServerFieldErrors } from '../hooks/useServerFieldErrors';
@@ -30,15 +31,7 @@ export function RegisterForm() {
         Your inventory starts empty. You will add the first product in a minute.
       </p>
 
-      {formError ? (
-        <p
-          className="mt-6 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          role="alert"
-          aria-live="polite"
-        >
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <div className="mt-6">{<FormError message={formError} />}</div> : null}
 
       <form
         className="mt-6 grid gap-4"

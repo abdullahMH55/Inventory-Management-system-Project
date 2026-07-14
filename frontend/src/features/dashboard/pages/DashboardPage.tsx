@@ -7,7 +7,7 @@ import { LowStockTable } from '../components/LowStockTable';
 import { SalesChart } from '../components/SalesChart';
 import { StatBand } from '../components/StatBand';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { useLowStockThreshold } from '../hooks/useLowStockThreshold';
+import { useLowStockThreshold } from '@/shared/hooks/useLowStockThreshold';
 
 /** Greeting the clock, not the template: "Morning" at 9pm is a small lie. */
 function greeting(hour = new Date().getHours()): string {
