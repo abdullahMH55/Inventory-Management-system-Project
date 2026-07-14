@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet } from 'react-router-dom';
 import { RedirectIfAuthed } from '@/features/auth/guards/RedirectIfAuthed';
 import { RequireAuth } from '@/features/auth/guards/RequireAuth';
+import { AppShell } from '@/layouts/AppShell';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { FullPageLoader } from '@/shared/components/FullPageLoader';
 import { ROUTES } from './routes';
@@ -39,11 +40,25 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
-            path: ROUTES.dashboard,
-            lazy: lazyPage(() => import('@/features/dashboard/pages/DashboardPage')),
+            element: <AppShell />,
+            children: [
+              {
+                path: ROUTES.dashboard,
+                lazy: lazyPage(() => import('@/features/dashboard/pages/DashboardPage')),
+              },
+              // Routed but not built yet. The links are live so the dashboard's
+              // empty-state calls to action have a real destination.
+              ...[ROUTES.products, ROUTES.categories, ROUTES.sales, ROUTES.purchases].map(
+                (path) => ({
+                  path,
+                  lazy: lazyPage(() => import('@/shared/components/UpcomingPage')),
+                }),
+              ),
+            ],
           },
         ],
       },
+      { path: '*', lazy: lazyPage(() => import('@/shared/components/NotFoundPage')) },
     ],
   },
 ]);
