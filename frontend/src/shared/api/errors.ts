@@ -69,6 +69,8 @@ function hasMessage(data: unknown): data is { message: string } {
   );
 }
 
+const UNREACHABLE = 'Cannot reach the server. Check that the API is running.';
+
 const GENERIC_MESSAGE: Record<number, string> = {
   400: 'The request was invalid.',
   401: 'Your session has expired. Please sign in again.',
@@ -76,12 +78,24 @@ const GENERIC_MESSAGE: Record<number, string> = {
   404: 'The requested item was not found.',
   409: 'That conflicts with existing data.',
   500: 'Something went wrong on the server.',
+  502: UNREACHABLE,
+  503: UNREACHABLE,
+  504: UNREACHABLE,
 };
+
+/**
+ * A dead API does not always look like a network failure. Behind the dev proxy
+ * (and behind any reverse proxy in production) it comes back as a 502, with a
+ * response object and everything, so it must be classified as unreachable
+ * rather than as the server having thrown.
+ */
+const GATEWAY_STATUSES = new Set([502, 503, 504]);
 
 function kindForStatus(status: number): AppErrorKind {
   if (status === 401) return 'unauthorized';
   if (status === 403) return 'forbidden';
   if (status === 404) return 'notfound';
+  if (GATEWAY_STATUSES.has(status)) return 'network';
   if (status >= 500) return 'server';
   return 'domain';
 }
@@ -109,12 +123,18 @@ export function normalizeError(err: unknown): AppError {
     return new AppError({
       kind: 'network',
       status: 0,
-      message: 'Cannot reach the server. Check that the API is running.',
+      message: UNREACHABLE,
       raw: axiosError.message,
     });
   }
 
   const { status, data } = axiosError.response;
+
+  // Short-circuit before the body is read: a gateway's body is its own error
+  // text ("ECONNREFUSED..."), not the API's, and must never reach the user.
+  if (GATEWAY_STATUSES.has(status)) {
+    return new AppError({ kind: 'network', status, message: UNREACHABLE, raw: data });
+  }
 
   // (2) ValidationProblemDetails. Keys arrive PascalCase; camelCase them so they
   //     line up with react-hook-form field names without a mapping table.

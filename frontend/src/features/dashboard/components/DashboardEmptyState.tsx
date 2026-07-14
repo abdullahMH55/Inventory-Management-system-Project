@@ -76,7 +76,9 @@ export function DashboardEmptyState({
       </ol>
 
       {next ? (
-        <Button className="mt-8" render={<Link to={next.to} />}>
+        // nativeButton={false}: this renders an anchor, and claiming button
+        // semantics on a link breaks what assistive tech announces.
+        <Button className="mt-8" nativeButton={false} render={<Link to={next.to} />}>
           {next.label}
         </Button>
       ) : null}

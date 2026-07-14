@@ -11,6 +11,7 @@ export default function NotFoundPage() {
         <Button
           variant="outline"
           className="mt-6"
+          nativeButton={false}
           render={<Link to={ROUTES.dashboard} />}
         >
           Back to dashboard

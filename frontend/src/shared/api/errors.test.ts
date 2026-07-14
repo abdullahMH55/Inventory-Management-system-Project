@@ -88,6 +88,24 @@ describe('normalizeError', () => {
     expect(error.message).toContain('Cannot reach the server');
   });
 
+  it('treats a gateway status as unreachable, since a dead API behind a proxy is a 502', () => {
+    for (const status of [502, 503, 504]) {
+      const error = normalizeError(axiosErrorWith(status, ''));
+
+      expect(error.kind).toBe('network');
+      expect(error.message).toContain('Cannot reach the server');
+    }
+  });
+
+  it('never leaks a gateway\'s own error text to the user', () => {
+    const error = normalizeError(
+      axiosErrorWith(502, 'Error: connect ECONNREFUSED 127.0.0.1:5166'),
+    );
+
+    expect(error.message).toContain('Cannot reach the server');
+    expect(error.message).not.toContain('ECONNREFUSED');
+  });
+
   it('passes an existing AppError through untouched', () => {
     const original = new AppError({ kind: 'domain', status: 400, message: 'Already normalized' });
 
