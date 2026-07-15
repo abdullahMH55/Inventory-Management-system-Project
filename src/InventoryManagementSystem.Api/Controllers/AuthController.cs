@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using InventoryManagementSystem.Api.DTOs.Auth;
 using InventoryManagementSystem.Api.Services;
@@ -53,6 +54,20 @@ public class AuthController : ControllerBase
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Ok(new { message = "Logged out successfully" });
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult Me()
+    {
+        var response = new AuthResponse
+        {
+            UserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+            Name = User.FindFirstValue(ClaimTypes.Name) ?? string.Empty,
+            Email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty
+        };
+
+        return Ok(response);
     }
 
     private async Task SignInUserAsync(int userId, string name, string email)

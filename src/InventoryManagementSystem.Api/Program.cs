@@ -41,11 +41,18 @@ public class Program
 
         builder.Services.AddAuthorization();
 
+        // Cookie auth requires AllowCredentials, which cannot be combined with AllowAnyOrigin.
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                             ?? ["http://localhost:5173"];
+
         builder.Services.AddCors(options =>
         {
             options.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyMethod()
+                      .AllowAnyHeader()
+                      .AllowCredentials();
             });
         });
 

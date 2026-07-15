@@ -30,26 +30,16 @@ public class SalesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSaleRequest request)
     {
-        try
-        {
-            var result = await _saleService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        // Domain errors (product not found, insufficient stock, bad customer) are
+        // thrown as typed exceptions and mapped to 404/400 by ExceptionMiddleware.
+        var result = await _saleService.CreateAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateSaleRequest request)
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> Patch(int id, [FromBody] PatchSaleRequest request)
     {
-        if (id != request.Id) return BadRequest("Id mismatch");
-        var result = await _saleService.UpdateAsync(request);
+        var result = await _saleService.PatchAsync(id, request);
         return result == null ? NotFound() : Ok(result);
     }
 

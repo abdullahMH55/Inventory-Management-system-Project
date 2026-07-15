@@ -1,5 +1,6 @@
 using InventoryManagementSystem.Api.DTOs.Requests;
 using InventoryManagementSystem.Api.DTOs.Responses;
+using InventoryManagementSystem.Api.Exceptions;
 using InventoryManagementSystem.Api.Models;
 using InventoryManagementSystem.Api.Repositories;
 
@@ -10,18 +11,28 @@ public class SaleService : ISaleService
     private readonly ISaleRepository _saleRepository;
     private readonly ISaleProductRepository _saleProductRepository;
     private readonly IProductRepository _productRepository;
+    private readonly ICustomerRepository _customerRepository;
     private readonly IUserContextService _userContext;
 
     public SaleService(
         ISaleRepository saleRepository,
         ISaleProductRepository saleProductRepository,
         IProductRepository productRepository,
+        ICustomerRepository customerRepository,
         IUserContextService userContext)
     {
         _saleRepository = saleRepository;
         _saleProductRepository = saleProductRepository;
         _productRepository = productRepository;
+        _customerRepository = customerRepository;
         _userContext = userContext;
+    }
+
+    private async Task EnsureCustomerOwnedAsync(int customerId, int userId)
+    {
+        var customer = await _customerRepository.GetByIdAndUserAsync(customerId, userId);
+        if (customer == null)
+            throw new NotFoundException($"Customer with id {customerId} not found");
     }
 
     public async Task<List<SaleResponse>> GetAllAsync()
@@ -41,17 +52,26 @@ public class SaleService : ISaleService
     public async Task<SaleResponse> CreateAsync(CreateSaleRequest request)
     {
         var userId = _userContext.GetUserId();
+        await EnsureCustomerOwnedAsync(request.CustomerId, userId);
+
         decimal totalPrice = 0;
 
-        foreach (var sp in request.SaleProducts)
+        // Validate each product against the SUM of its lines, not each line against
+        // full stock. Two lines of 6 against stock 10 must be rejected together,
+        // otherwise the per-line decrement below drives stock negative.
+        var quantityByProduct = request.SaleProducts
+            .GroupBy(sp => sp.ProductId)
+            .ToDictionary(g => g.Key, g => g.Sum(sp => sp.Quantity));
+
+        foreach (var (productId, totalQuantity) in quantityByProduct)
         {
-            var product = await _productRepository.GetByIdAndUserAsync(sp.ProductId, userId)
-                ?? throw new KeyNotFoundException($"Product with id {sp.ProductId} not found");
+            var product = await _productRepository.GetByIdAndUserAsync(productId, userId)
+                ?? throw new NotFoundException($"Product with id {productId} not found");
 
-            if (product.Stock < sp.Quantity)
-                throw new InvalidOperationException($"Insufficient stock for product '{product.Name}'");
+            if (product.Stock < totalQuantity)
+                throw new BusinessRuleException($"Insufficient stock for product '{product.Name}'");
 
-            totalPrice += product.Price * sp.Quantity;
+            totalPrice += product.Price * totalQuantity;
         }
 
         var sale = new Sale
@@ -90,23 +110,34 @@ public class SaleService : ISaleService
 
         await _saleProductRepository.SaveChangesAsync();
 
-        return MapToResponse(sale);
+        // Re-read so the response carries the customer name and hydrated lines.
+        var created = await _saleRepository.GetByIdAndUserAsync(sale.Id, userId);
+        return MapToResponse(created ?? sale);
     }
 
-    public async Task<SaleResponse?> UpdateAsync(UpdateSaleRequest request)
+    // Header-only patch. Line items cannot be edited by any endpoint: doing so
+    // would need to reverse and re-apply stock in one transaction, which this
+    // API does not have. To change lines, delete the sale (stock is restored)
+    // and record it again.
+    public async Task<SaleResponse?> PatchAsync(int id, PatchSaleRequest request)
     {
         var userId = _userContext.GetUserId();
-        var sale = await _saleRepository.GetByIdAndUserAsync(request.Id, userId);
+        var sale = await _saleRepository.GetByIdAndUserAsync(id, userId);
         if (sale == null) return null;
 
-        sale.CustomerId = request.CustomerId;
-        sale.Date = request.Date;
-        sale.Status = request.Status;
+        if (request.CustomerId is int customerId)
+        {
+            await EnsureCustomerOwnedAsync(customerId, userId);
+            sale.CustomerId = customerId;
+        }
+        if (request.Date is DateTime date) sale.Date = date;
+        if (request.Status is not null) sale.Status = request.Status;
 
         _saleRepository.Update(sale);
         await _saleRepository.SaveChangesAsync();
 
-        return MapToResponse(sale);
+        var updated = await _saleRepository.GetByIdAndUserAsync(sale.Id, userId);
+        return MapToResponse(updated ?? sale);
     }
 
     public async Task<bool> DeleteAsync(int id)

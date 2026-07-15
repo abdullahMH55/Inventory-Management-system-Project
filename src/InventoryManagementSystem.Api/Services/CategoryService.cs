@@ -1,5 +1,6 @@
 using InventoryManagementSystem.Api.DTOs.Requests;
 using InventoryManagementSystem.Api.DTOs.Responses;
+using InventoryManagementSystem.Api.Exceptions;
 using InventoryManagementSystem.Api.Models;
 using InventoryManagementSystem.Api.Repositories;
 
@@ -91,6 +92,13 @@ public class CategoryService : ICategoryService
         var userId = _userContext.GetUserId();
         var category = await _categoryRepository.GetByIdAndUserAsync(id, userId);
         if (category == null) return false;
+
+        // Products are loaded with the category, so check them directly. (Relying
+        // on the FK violation would surface as an EF-level InvalidOperationException
+        // here, not a DbUpdateException, because the dependents are tracked.)
+        if (category.Products.Count > 0)
+            throw new ConflictException(
+                "Cannot delete a category that still has products. Move or delete them first.");
 
         _categoryRepository.Delete(category);
         await _categoryRepository.SaveChangesAsync();
