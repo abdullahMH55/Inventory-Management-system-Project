@@ -4,8 +4,8 @@ import type { Product } from '@/features/products/schemas/product.schema';
 import type { Purchase } from '@/features/purchases/schemas/purchase.schema';
 import type { Sale } from '@/features/sales/schemas/sale.schema';
 import { mergeActivity } from './activity';
-import { buildSalesSeries } from './series';
-import { computeStats, selectLowStock } from './stats';
+import { fillDailySeries } from './series';
+import { selectLowStock } from './stats';
 
 const product = (over: Partial<Product> = {}): Product => ({
   id: 1,
@@ -39,54 +39,6 @@ const purchase = (over: Partial<Purchase> = {}): Purchase => ({
   dateIn: '2026-07-11T09:00:00',
   notes: null,
   ...over,
-});
-
-describe('computeStats', () => {
-  it('returns zeroes rather than NaN for a brand-new account', () => {
-    const stats = computeStats([], [], 10);
-
-    expect(stats).toEqual({
-      totalProducts: 0,
-      totalStockUnits: 0,
-      inventoryValueCents: 0,
-      lowStockCount: 0,
-      outOfStockCount: 0,
-      salesValueCents: 0,
-    });
-  });
-
-  it('accumulates money in integer cents so float error never reaches the tile', () => {
-    // 19.99 * 3 in floats is 59.97000000000001.
-    const stats = computeStats([product({ price: 19.99, stock: 3 })], [], 10);
-
-    expect(stats.inventoryValueCents).toBe(5997);
-    expect(stats.salesValueCents).toBe(0);
-  });
-
-  it('sums many sales without drifting', () => {
-    const sales = Array.from({ length: 10 }, (_, i) => sale({ id: i + 1, totalPrice: 0.1 }));
-
-    // 0.1 summed ten times as floats is 0.9999999999999999.
-    expect(computeStats([], sales, 10).salesValueCents).toBe(100);
-  });
-
-  it('counts out of stock separately from low stock', () => {
-    const stats = computeStats(
-      [
-        product({ id: 1, stock: 0 }),
-        product({ id: 2, stock: 4 }),
-        product({ id: 3, stock: 10 }),
-        product({ id: 4, stock: 11 }),
-      ],
-      [],
-      10,
-    );
-
-    expect(stats.outOfStockCount).toBe(1);
-    // Inclusive of the threshold, exclusive of zero, which is its own state.
-    expect(stats.lowStockCount).toBe(2);
-    expect(stats.totalStockUnits).toBe(25);
-  });
 });
 
 describe('selectLowStock', () => {
@@ -183,32 +135,25 @@ describe('mergeActivity', () => {
   });
 });
 
-describe('buildSalesSeries', () => {
+describe('fillDailySeries', () => {
   const now = new Date('2026-07-14T12:00:00');
 
   it('zero-fills the window so a quiet account does not draw a fake trend', () => {
-    const series = buildSalesSeries([sale({ date: '2026-07-14T09:00:00', totalPrice: 25 })], 30, now);
+    const series = fillDailySeries([{ period: '2026-07-14', total: 25, count: 1 }], 30, now);
 
     expect(series).toHaveLength(30);
     expect(series[0]).toEqual({ day: '2026-06-15', valueCents: 0 });
     expect(series.at(-1)).toEqual({ day: '2026-07-14', valueCents: 2500 });
   });
 
-  it('adds up several sales landing on the same day', () => {
-    const series = buildSalesSeries(
-      [
-        sale({ id: 1, date: '2026-07-13T09:00:00', totalPrice: 10.5 }),
-        sale({ id: 2, date: '2026-07-13T17:00:00', totalPrice: 4.5 }),
-      ],
-      30,
-      now,
-    );
+  it('converts a point total to cents exactly', () => {
+    const series = fillDailySeries([{ period: '2026-07-13', total: 15.0, count: 2 }], 30, now);
 
     expect(series.find((point) => point.day === '2026-07-13')?.valueCents).toBe(1500);
   });
 
-  it('ignores sales older than the window', () => {
-    const series = buildSalesSeries([sale({ date: '2020-01-01T09:00:00', totalPrice: 999 })], 30, now);
+  it('ignores points outside the window', () => {
+    const series = fillDailySeries([{ period: '2020-01-01', total: 999, count: 1 }], 30, now);
 
     expect(series.every((point) => point.valueCents === 0)).toBe(true);
   });

@@ -1,6 +1,6 @@
 import { cn } from '@/shared/lib/cn';
-import { formatCurrency, formatNumber } from '@/shared/lib/format';
-import type { DashboardStats } from '../lib/stats';
+import { formatCurrency, formatNumber, toCents } from '@/shared/lib/format';
+import type { DashboardStats } from '../schemas/dashboard.schema';
 
 /**
  * One ruled band divided by hairlines, not four cards.
@@ -52,7 +52,7 @@ export function StatBand({ stats, threshold }: { stats: DashboardStats; threshol
       />
       <Cell
         label="Stock value"
-        value={formatCurrency(stats.inventoryValueCents)}
+        value={formatCurrency(toCents(stats.inventoryValue))}
         hint="Price x quantity on hand"
       />
       <Cell
@@ -70,7 +70,7 @@ export function StatBand({ stats, threshold }: { stats: DashboardStats; threshol
       />
       <Cell
         label="Sales value"
-        value={formatCurrency(stats.salesValueCents)}
+        value={formatCurrency(toCents(stats.salesValue))}
         // Not "revenue": Sale.Status is free text and nothing server-side knows
         // what a cancelled sale is, so every sale ever recorded counts here.
         hint="All sales ever recorded"

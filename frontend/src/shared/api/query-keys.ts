@@ -34,4 +34,13 @@ export const qk = {
     all: () => ['suppliers'] as const,
     list: () => ['suppliers', 'list'] as const,
   },
+  dashboard: {
+    all: () => ['dashboard'] as const,
+    stats: (threshold: number) => ['dashboard', 'stats', threshold] as const,
+  },
+  reports: {
+    all: () => ['reports'] as const,
+    topProducts: (params: Record<string, unknown>) => ['reports', 'topProducts', params] as const,
+    salesSummary: (params: Record<string, unknown>) => ['reports', 'salesSummary', params] as const,
+  },
 } as const;

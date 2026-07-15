@@ -1,13 +1,24 @@
+import { useMemo } from 'react';
 import { useSession } from '@/features/auth/hooks/useSession';
+import { useProducts } from '@/features/products/hooks/useProducts';
+import { usePurchases } from '@/features/purchases/hooks/usePurchases';
+import { useSales } from '@/features/sales/hooks/useSales';
 import { ErrorState } from '@/shared/components/ErrorState';
+import { useLowStockThreshold } from '@/shared/hooks/useLowStockThreshold';
+import type { AppError } from '@/shared/api/errors';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { DashboardEmptyState } from '../components/DashboardEmptyState';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import { LowStockTable } from '../components/LowStockTable';
 import { SalesChart } from '../components/SalesChart';
 import { StatBand } from '../components/StatBand';
-import { useDashboardData } from '../hooks/useDashboardData';
-import { useLowStockThreshold } from '@/shared/hooks/useLowStockThreshold';
+import { TopProducts } from '../components/TopProducts';
+import { useDashboardStats } from '../hooks/useDashboardStats';
+import { useSalesSummary } from '../hooks/useSalesSummary';
+import { useTopProducts } from '../hooks/useTopProducts';
+import { mergeActivity } from '../lib/activity';
+import { fillDailySeries } from '../lib/series';
+import { selectLowStock } from '../lib/stats';
 
 /** Greeting the clock, not the template: "Morning" at 9pm is a small lie. */
 function greeting(hour = new Date().getHours()): string {
@@ -19,28 +30,46 @@ function greeting(hour = new Date().getHours()): string {
 export default function DashboardPage() {
   const { user } = useSession();
   const [threshold, setThreshold] = useLowStockThreshold();
-  const data = useDashboardData(threshold);
 
-  // First load only. A background refetch keeps the data on screen and says so
-  // in the topbar instead; dropping back to the skeleton is what makes a
-  // dashboard flicker.
-  if (data.isPending) return <DashboardSkeleton />;
+  // The stat band and chart come from the server; the low-stock table and
+  // activity feed still need actual rows, so those keep their list queries.
+  const statsQuery = useDashboardStats(threshold);
+  const summaryQuery = useSalesSummary();
+  const topQuery = useTopProducts();
+  const productsQuery = useProducts();
+  const salesQuery = useSales();
+  const purchasesQuery = usePurchases();
 
-  if (data.isError) {
+  const queries = [statsQuery, summaryQuery, topQuery, productsQuery, salesQuery, purchasesQuery];
+
+  const products = productsQuery.data ?? [];
+  const lowStock = useMemo(() => selectLowStock(products, [], threshold), [products, threshold]);
+  const activity = useMemo(
+    () => mergeActivity(salesQuery.data ?? [], purchasesQuery.data ?? []),
+    [salesQuery.data, purchasesQuery.data],
+  );
+  const series = useMemo(() => fillDailySeries(summaryQuery.data ?? []), [summaryQuery.data]);
+
+  if (queries.some((q) => q.isPending)) return <DashboardSkeleton />;
+
+  if (queries.some((q) => q.isError)) {
+    const error = queries.find((q) => q.error)?.error as AppError | undefined;
     return (
       <div className="grid h-full place-items-center p-6">
-        <ErrorState error={data.error} onRetry={data.refetchAll} />
+        <ErrorState error={error} onRetry={() => queries.forEach((q) => void q.refetch())} />
       </div>
     );
   }
 
+  const stats = statsQuery.data!;
+
   // A genuinely blank account, which is where every new registration lands.
-  if (data.isEmpty) {
+  if (stats.totalProducts === 0 && stats.salesCount === 0 && stats.purchasesCount === 0) {
     return (
       <DashboardEmptyState
-        hasCategories={data.categories.length > 0}
-        hasProducts={data.products.length > 0}
-        hasSales={data.sales.length > 0}
+        hasCategories={stats.categoriesCount > 0}
+        hasProducts={stats.totalProducts > 0}
+        hasSales={stats.salesCount > 0}
       />
     );
   }
@@ -53,26 +82,21 @@ export default function DashboardPage() {
         <h1 className="text-lg font-medium tracking-tight">
           {firstName ? `${greeting()}, ${firstName}` : 'Overview'}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Where your stock stands right now.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Where your stock stands right now.</p>
       </header>
 
-      <StatBand stats={data.stats} threshold={threshold} />
+      <StatBand stats={stats} threshold={threshold} />
 
       {/* Partial-empty is not the same as empty: each panel owns its own empty
           state, so products-but-no-sales still shows the table and the band. */}
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-        <LowStockTable
-          rows={data.lowStock}
-          threshold={threshold}
-          onThresholdChange={setThreshold}
-        />
-        <ActivityFeed items={data.activity} />
+        <LowStockTable rows={lowStock} threshold={threshold} onThresholdChange={setThreshold} />
+        <ActivityFeed items={activity} />
       </div>
 
-      <div className="mt-8">
-        <SalesChart series={data.series} hasSales={data.sales.length > 0} />
+      <div className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+        <SalesChart series={series} hasSales={stats.salesCount > 0} />
+        <TopProducts items={topQuery.data ?? []} />
       </div>
     </div>
   );

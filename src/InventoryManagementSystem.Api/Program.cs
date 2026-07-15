@@ -78,6 +78,8 @@ public class Program
         builder.Services.AddScoped<ICustomerService, CustomerService>();
         builder.Services.AddScoped<ISaleService, SaleService>();
         builder.Services.AddScoped<ISaleProductService, SaleProductService>();
+        builder.Services.AddScoped<IDashboardService, DashboardService>();
+        builder.Services.AddScoped<IReportService, ReportService>();
 
         var app = builder.Build();
 
