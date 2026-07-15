@@ -1,5 +1,5 @@
-import type { Sale } from '@/features/sales/schemas/sale.schema';
-import { parseApiDate, toCents } from '@/shared/lib/format';
+import { toCents } from '@/shared/lib/format';
+import type { SalesSummaryPoint } from '../schemas/dashboard.schema';
 
 export type SeriesPoint = { day: string; valueCents: number };
 
@@ -11,34 +11,29 @@ function isoDay(date: Date): string {
 }
 
 /**
- * Daily sales value over a trailing window.
+ * Zero-fill the trailing window from the server's daily summary points.
  *
- * The buckets are zero-filled before anything is added to them. Without that, an
- * account with three sales renders a three-point line that lies about the shape
- * of the data: gaps would read as a trend rather than as nothing happening.
+ * GROUP BY only returns days that had sales, so the empty days are added here.
+ * Without that, a quiet account draws a misleading few-point line instead of a
+ * mostly-flat one. Each point's decimal total is converted to cents once (a
+ * single value, no accumulation, so no float drift).
  */
-export function buildSalesSeries(sales: Sale[], days = 30, now = new Date()): SeriesPoint[] {
-  const buckets = new Map<string, number>();
+export function fillDailySeries(
+  points: SalesSummaryPoint[],
+  days = 30,
+  now = new Date(),
+): SeriesPoint[] {
+  const totalByDay = new Map(points.map((point) => [point.period, point.total]));
 
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
 
+  const series: SeriesPoint[] = [];
   for (let offset = days - 1; offset >= 0; offset -= 1) {
     const day = new Date(start);
     day.setDate(day.getDate() - offset);
-    buckets.set(isoDay(day), 0);
+    const key = isoDay(day);
+    series.push({ day: key, valueCents: toCents(totalByDay.get(key) ?? 0) });
   }
-
-  for (const sale of sales) {
-    const date = parseApiDate(sale.date);
-    if (Number.isNaN(date.getTime())) continue;
-
-    const key = isoDay(date);
-    const current = buckets.get(key);
-    if (current === undefined) continue; // outside the window
-
-    buckets.set(key, current + toCents(sale.totalPrice));
-  }
-
-  return [...buckets].map(([day, valueCents]) => ({ day, valueCents }));
+  return series;
 }
