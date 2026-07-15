@@ -5,7 +5,7 @@ import { NAV_ITEMS } from '../nav';
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="grid gap-0.5" aria-label="Main">
-      {NAV_ITEMS.map(({ to, label, icon: Icon, upcoming, groupStart }) => (
+      {NAV_ITEMS.map(({ to, label, icon: Icon, groupStart }) => (
         <NavLink
           key={to}
           to={to}
@@ -24,11 +24,6 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         >
           <Icon className="size-4 shrink-0" aria-hidden />
           <span className="truncate">{label}</span>
-          {upcoming ? (
-            <span className="ml-auto text-[0.625rem] uppercase tracking-wider text-muted-foreground/70">
-              Soon
-            </span>
-          ) : null}
         </NavLink>
       ))}
     </nav>

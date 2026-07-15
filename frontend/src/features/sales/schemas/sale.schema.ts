@@ -27,3 +27,37 @@ export const saleSchema = z.object({
 
 export type Sale = z.infer<typeof saleSchema>;
 export type SaleProduct = z.infer<typeof saleProductSchema>;
+
+export const saleLineFormSchema = z.object({
+  productId: z.number({ message: 'Choose a product' }).int().positive('Choose a product'),
+  quantity: z
+    .number({ message: 'Quantity is required' })
+    .int('Whole units only')
+    .positive('At least 1'),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const saleFormSchema = z.object({
+  customerId: z.number({ message: 'Choose a customer' }).int().positive('Choose a customer'),
+  date: z.string().min(1, 'Date is required'),
+  // Free text server-side; a plain input with a datalist, not a fake enum.
+  status: z.string().trim().max(50).optional(),
+  lines: z.array(saleLineFormSchema).min(1, 'Add at least one product'),
+});
+
+export type SaleFormValues = z.infer<typeof saleFormSchema>;
+
+/** POST body: each line also carries dateOut (= the sale date; see the form). */
+export type SaleCreate = {
+  customerId: number;
+  date: string;
+  status: string | null;
+  saleProducts: { productId: number; quantity: number; dateOut: string; notes: string | null }[];
+};
+
+/** PATCH body: header only. Line items are not editable by any endpoint. */
+export type SalePatch = {
+  customerId?: number;
+  date?: string;
+  status?: string | null;
+};

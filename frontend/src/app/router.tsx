@@ -66,11 +66,17 @@ export const router = createBrowserRouter([
                 path: ROUTES.purchases,
                 lazy: lazyPage(() => import('@/features/purchases/pages/PurchasesPage')),
               },
-              // Routed but not built yet. The link is live so the dashboard's
-              // empty-state call to action has a real destination.
               {
                 path: ROUTES.sales,
-                lazy: lazyPage(() => import('@/shared/components/UpcomingPage')),
+                lazy: lazyPage(() => import('@/features/sales/pages/SalesPage')),
+              },
+              {
+                path: ROUTES.salesNew,
+                lazy: lazyPage(() => import('@/features/sales/pages/SaleFormPage')),
+              },
+              {
+                path: ROUTES.saleEdit(':id'),
+                lazy: lazyPage(() => import('@/features/sales/pages/SaleEditPage')),
               },
             ],
           },

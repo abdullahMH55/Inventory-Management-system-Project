@@ -5,6 +5,8 @@ export const ROUTES = {
   products: '/products',
   categories: '/categories',
   sales: '/sales',
+  salesNew: '/sales/new',
+  saleEdit: (id: number | string) => `/sales/${id}/edit`,
   purchases: '/purchases',
   customers: '/customers',
   suppliers: '/suppliers',
