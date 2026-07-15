@@ -1,5 +1,6 @@
 import type { Category } from '@/features/categories/schemas/category.schema';
 import type { Product } from '@/features/products/schemas/product.schema';
+import { categoryNameMap, resolveCategoryName } from '@/features/products/lib/resolve';
 import type { Sale } from '@/features/sales/schemas/sale.schema';
 import { toCents } from '@/shared/lib/format';
 
@@ -52,27 +53,18 @@ export function computeStats(
 
 export type LowStockRow = Product & { resolvedCategory: string };
 
-/**
- * The one place products and categories are joined, because a product's
- * categoryName is always "" on the list endpoint.
- *
- * Reading p.categoryName first rather than the map alone means that if someone
- * ever adds the missing Include server-side, this silently starts using the
- * server's value and the fallback becomes dead code.
- */
 export function selectLowStock(
   products: Product[],
   categories: Category[],
   threshold: number,
 ): LowStockRow[] {
-  const nameById = new Map(categories.map((category) => [category.id, category.name]));
+  const nameById = categoryNameMap(categories);
 
   return products
     .filter((product) => product.stock <= threshold)
     .map((product) => ({
       ...product,
-      resolvedCategory:
-        product.categoryName || nameById.get(product.categoryId) || 'Uncategorised',
+      resolvedCategory: resolveCategoryName(product, nameById),
     }))
     .sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
 }

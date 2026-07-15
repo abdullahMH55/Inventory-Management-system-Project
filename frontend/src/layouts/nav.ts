@@ -22,7 +22,7 @@ export type NavItem = {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Dashboard', icon: LayoutDashboard },
-  { to: ROUTES.products, label: 'Products', icon: Package, upcoming: true },
+  { to: ROUTES.products, label: 'Products', icon: Package },
   { to: ROUTES.categories, label: 'Categories', icon: Boxes },
   { to: ROUTES.sales, label: 'Sales', icon: ReceiptText, upcoming: true },
   { to: ROUTES.purchases, label: 'Purchases', icon: Truck, upcoming: true },
