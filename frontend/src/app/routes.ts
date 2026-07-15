@@ -6,4 +6,6 @@ export const ROUTES = {
   categories: '/categories',
   sales: '/sales',
   purchases: '/purchases',
+  customers: '/customers',
+  suppliers: '/suppliers',
 } as const;

@@ -26,4 +26,12 @@ export const qk = {
     all: () => ['purchases'] as const,
     list: () => ['purchases', 'list'] as const,
   },
+  customers: {
+    all: () => ['customers'] as const,
+    list: () => ['customers', 'list'] as const,
+  },
+  suppliers: {
+    all: () => ['suppliers'] as const,
+    list: () => ['suppliers', 'list'] as const,
+  },
 } as const;

@@ -5,7 +5,7 @@ import { NAV_ITEMS } from '../nav';
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="grid gap-0.5" aria-label="Main">
-      {NAV_ITEMS.map(({ to, label, icon: Icon, upcoming }) => (
+      {NAV_ITEMS.map(({ to, label, icon: Icon, upcoming, groupStart }) => (
         <NavLink
           key={to}
           to={to}
@@ -15,6 +15,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             cn(
               'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-150',
               'hover:bg-accent hover:text-accent-foreground',
+              groupStart && 'mt-2 border-t border-rule pt-3',
               isActive
                 ? 'bg-accent font-medium text-accent-foreground'
                 : 'text-muted-foreground',

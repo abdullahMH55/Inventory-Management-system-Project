@@ -11,11 +11,16 @@ import { cn } from '@/shared/lib/cn';
 export function Field({
   label,
   error,
+  hint,
   className,
   ...inputProps
-}: { label: string; error?: string } & ComponentProps<typeof Input>) {
+}: { label: string; error?: string; hint?: string } & ComponentProps<typeof Input>) {
   const id = useId();
   const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+
+  const describedBy =
+    [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={cn('grid gap-1.5', className)}>
@@ -23,10 +28,15 @@ export function Field({
       <Input
         id={id}
         aria-invalid={!!error}
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={describedBy}
         className={cn(error && 'border-destructive')}
         {...inputProps}
       />
+      {hint && !error ? (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      ) : null}
       {error ? (
         <p id={errorId} className="text-sm text-destructive">
           {error}
