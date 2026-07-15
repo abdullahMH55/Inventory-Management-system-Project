@@ -25,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.products, label: 'Products', icon: Package },
   { to: ROUTES.categories, label: 'Categories', icon: Boxes },
   { to: ROUTES.sales, label: 'Sales', icon: ReceiptText, upcoming: true },
-  { to: ROUTES.purchases, label: 'Purchases', icon: Truck, upcoming: true },
+  { to: ROUTES.purchases, label: 'Purchases', icon: Truck },
   // The directory: who you sell to and buy from.
   { to: ROUTES.customers, label: 'Customers', icon: Users, groupStart: true },
   { to: ROUTES.suppliers, label: 'Suppliers', icon: Factory },

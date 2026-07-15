@@ -19,3 +19,26 @@ export const purchaseSchema = z.object({
 });
 
 export type Purchase = z.infer<typeof purchaseSchema>;
+
+/** Mirrors CreatePurchaseProductRequest. There is no cost field: the API has none. */
+export const purchaseFormSchema = z.object({
+  productId: z.number({ message: 'Choose a product' }).int().positive('Choose a product'),
+  supplierId: z.number({ message: 'Choose a supplier' }).int().positive('Choose a supplier'),
+  quantity: z
+    .number({ message: 'Quantity is required' })
+    .int('Whole units only')
+    .positive('At least 1'),
+  dateIn: z.string().min(1, 'Date is required'),
+  notes: z.string().trim().max(1000).optional(),
+});
+
+export type PurchaseFormValues = z.infer<typeof purchaseFormSchema>;
+
+export type PurchaseCreate = {
+  productId: number;
+  supplierId: number;
+  quantity: number;
+  dateIn: string;
+  notes: string | null;
+};
+export type PurchaseUpdate = PurchaseCreate & { id: number };
