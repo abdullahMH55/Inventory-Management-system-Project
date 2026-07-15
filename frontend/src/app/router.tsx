@@ -46,14 +46,16 @@ export const router = createBrowserRouter([
                 path: ROUTES.dashboard,
                 lazy: lazyPage(() => import('@/features/dashboard/pages/DashboardPage')),
               },
+              {
+                path: ROUTES.categories,
+                lazy: lazyPage(() => import('@/features/categories/pages/CategoriesPage')),
+              },
               // Routed but not built yet. The links are live so the dashboard's
               // empty-state calls to action have a real destination.
-              ...[ROUTES.products, ROUTES.categories, ROUTES.sales, ROUTES.purchases].map(
-                (path) => ({
-                  path,
-                  lazy: lazyPage(() => import('@/shared/components/UpcomingPage')),
-                }),
-              ),
+              ...[ROUTES.products, ROUTES.sales, ROUTES.purchases].map((path) => ({
+                path,
+                lazy: lazyPage(() => import('@/shared/components/UpcomingPage')),
+              })),
             ],
           },
         ],
