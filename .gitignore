@@ -364,3 +364,7 @@ FodyWeavers.xsd
 
 # NuGet local cache
 .nuget/
+
+# Exception middleware (kept locally, not tracked)
+src/InventoryManagementSystem.Api/Middlewares/
+src/InventoryManagementSystem.Api/Exceptions/
